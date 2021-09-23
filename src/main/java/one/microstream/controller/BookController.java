@@ -19,7 +19,7 @@ public class BookController
 		List<Book> allCreatedBooks = MockupUtils.loadMockupData();
 		
 		DB.root.getBooks().addAll(allCreatedBooks);
-		DB.storageManager.store(DB.root.getBooks());
+		DB.store(DB.root.getBooks());
 		
 		return HttpResponse.ok("Books successfully created!");
 	}
@@ -34,7 +34,7 @@ public class BookController
 	public HttpResponse<?> clearBooks()
 	{
 		DB.root.getBooks().clear();
-		DB.storageManager.store(DB.root.getBooks());
+		DB.store(DB.root.getBooks());
 		
 		return HttpResponse.ok("Books successfully cleared!");
 	}

@@ -1,11 +1,14 @@
 package one.microstream.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import one.microstream.domain.Book;
+import one.microstream.persistence.types.Storer;
 import one.microstream.storage.DB;
 import one.microstream.utils.BinaryPersistenceReloader;
 import one.microstream.utils.MockupUtils;
@@ -99,5 +102,37 @@ public class BookController
 		}
 		
 		return HttpResponse.ok("Author successfully rollbacked!");
+	}
+	
+	@Get("/rollbackImplExample")
+	public HttpResponse<?> rollbackImplExample()
+	{
+		Storer ls = DB.storageManager.createLazyStorer();
+		
+		List<Book> filteredBooks =
+			DB.root.getBooks().stream().filter(b -> b.getIsbn().startsWith("49")).collect(Collectors.toList());
+		
+		filteredBooks.forEach(b ->
+		{
+			b.setPrice(new BigDecimal(50.00));
+			ls.store(b);
+		});
+		
+		try
+		{
+			ls.commit();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			
+			BinaryPersistenceReloader reloader =
+				BinaryPersistenceReloader.New(DB.storageManager.persistenceManager());
+			
+			filteredBooks.forEach(b -> reloader.reloadFlat(b));
+			return HttpResponse.serverError("Update books failed - " + e.getMessage());
+		}
+		
+		return HttpResponse.ok("Books successfully updated!");
 	}
 }

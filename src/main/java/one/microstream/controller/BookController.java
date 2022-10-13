@@ -112,14 +112,14 @@ public class BookController
 		List<Book> filteredBooks =
 			DB.root.getBooks().stream().filter(b -> b.getIsbn().startsWith("49")).collect(Collectors.toList());
 		
-		filteredBooks.forEach(b ->
-		{
-			b.setPrice(new BigDecimal(50.00));
-			ls.store(b);
-		});
-		
 		try
 		{
+			filteredBooks.forEach(b ->
+			{
+				b.setPrice(new BigDecimal(50.00));
+				ls.store(b);
+			});
+			
 			ls.commit();
 		}
 		catch(Exception e)

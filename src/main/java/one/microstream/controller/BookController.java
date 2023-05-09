@@ -28,6 +28,33 @@ public class BookController
 		return HttpResponse.ok("Books successfully created!");
 	}
 	
+	@Get("/updateMultiBooks")
+	public HttpResponse<?> updateMultiBooks()
+	{
+		List<Book> collect =
+			DB.root.getBooks().stream().filter(b -> b.getName().startsWith("A")).collect(Collectors.toList());
+		
+		Storer ls = DB.storageManager.createLazyStorer();
+		
+		try
+		{
+			collect.forEach(b ->
+			{
+				b.setPrice(b.getPrice().add(new BigDecimal(10)));
+				ls.store(b);
+			});
+			
+			ls.commit();
+		}
+		catch(Exception e)
+		{
+			Reloader reloader = Reloader.New(DB.storageManager.persistenceManager());
+			collect.forEach(reloader::reloadFlat);
+		}
+		
+		return HttpResponse.ok("Books successfully changed!");
+	}
+	
 	@Get
 	public List<Book> getBook()
 	{
@@ -71,7 +98,7 @@ public class BookController
 	{
 		Book book =
 			DB.root.getBooks().stream().filter(b -> b.getIsbn().equalsIgnoreCase("498123138-5")).findFirst().get();
-			
+		
 		Reloader reloader = Reloader.New(DB.storageManager.persistenceManager());
 		
 		reloader.reloadFlat(book);

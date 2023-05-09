@@ -1,6 +1,7 @@
 package one.microstream.controller;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Controller;
@@ -20,6 +21,14 @@ public class BookController
 		
 		DB.root.getBooks().addAll(allCreatedBooks);
 		DB.store(DB.root.getBooks());
+		
+		return HttpResponse.ok("Books successfully created!");
+	}
+	
+	@Get("/changeMultiBooks")
+	public HttpResponse<?> changeMultiBooks()
+	{
+		List<Book> collect = DB.root.getBooks().stream().filter(b -> b.getName().startsWith("A")).collect(Collectors.toList());
 		
 		return HttpResponse.ok("Books successfully created!");
 	}

@@ -84,12 +84,12 @@
 		<dependency>
 			<groupId>one.microstream</groupId>
 			<artifactId>microstream-storage-embedded</artifactId>
-			<version>07.01.00-MS-GA</version>
+			<version>08.00.00-MS-GA</version>
 		</dependency>
 		<dependency>
 			<groupId>one.microstream</groupId>
 			<artifactId>microstream-storage-embedded-configuration</artifactId>
-			<version>07.01.00-MS-GA</version>
+			<version>08.00.00-MS-GA</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
 		<dependency>

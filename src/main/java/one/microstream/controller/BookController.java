@@ -9,8 +9,8 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import one.microstream.domain.Book;
 import one.microstream.persistence.types.Storer;
+import one.microstream.persistence.util.Reloader;
 import one.microstream.storage.DB;
-import one.microstream.utils.BinaryPersistenceReloader;
 import one.microstream.utils.MockupUtils;
 
 
@@ -71,10 +71,8 @@ public class BookController
 	{
 		Book book =
 			DB.root.getBooks().stream().filter(b -> b.getIsbn().equalsIgnoreCase("498123138-5")).findFirst().get();
-		System.out.println(book.getName());
-		
-		final BinaryPersistenceReloader reloader =
-			BinaryPersistenceReloader.New(DB.storageManager.persistenceManager());
+			
+		Reloader reloader = Reloader.New(DB.storageManager.persistenceManager());
 		
 		reloader.reloadFlat(book);
 		System.out.println(book.getName());
@@ -89,8 +87,7 @@ public class BookController
 			DB.root.getBooks().stream().filter(b -> b.getIsbn().equalsIgnoreCase("498123138-5")).findFirst().get();
 		System.out.println(book.getAuthor().getLastname());
 		
-		final BinaryPersistenceReloader reloader =
-			BinaryPersistenceReloader.New(DB.storageManager.persistenceManager());
+		Reloader reloader = Reloader.New(DB.storageManager.persistenceManager());
 		
 		try
 		{
@@ -126,8 +123,7 @@ public class BookController
 		{
 			e.printStackTrace();
 			
-			BinaryPersistenceReloader reloader =
-				BinaryPersistenceReloader.New(DB.storageManager.persistenceManager());
+			Reloader reloader = Reloader.New(DB.storageManager.persistenceManager());
 			
 			filteredBooks.forEach(b -> reloader.reloadFlat(b));
 			return HttpResponse.serverError("Update books failed - " + e.getMessage());

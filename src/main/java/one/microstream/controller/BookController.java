@@ -1,161 +1,86 @@
 package one.microstream.controller;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
+import jakarta.inject.Inject;
+import one.microstream.dao.DAOBook;
 import one.microstream.domain.Book;
-import one.microstream.persistence.types.Storer;
-import one.microstream.persistence.util.Reloader;
-import one.microstream.storage.DB;
 import one.microstream.utils.MockupUtils;
 
 
 @Controller("/books")
 public class BookController
 {
+	@Inject private DAOBook dao;
+	
 	@Get("/create")
 	public HttpResponse<?> createBooks()
 	{
 		List<Book> allCreatedBooks = MockupUtils.loadMockupData();
 		
-		DB.root.getBooks().addAll(allCreatedBooks);
-		DB.storageManager.store(DB.root.getBooks());
+		dao.addBooks(allCreatedBooks);
 		
 		return HttpResponse.ok("Books successfully created!");
 	}
 	
-	@Get("/updateMultiBooks")
-	public HttpResponse<?> updateMultiBooks()
-	{
-		List<Book> collect =
-			DB.root.getBooks().stream().filter(b -> b.getName().startsWith("A")).collect(Collectors.toList());
-		
-		Storer ls = DB.storageManager.createLazyStorer();
-		
-		try
-		{
-			collect.forEach(b ->
-			{
-				b.setPrice(b.getPrice().add(new BigDecimal(10)));
-				ls.store(b);
-			});
-			
-			ls.commit();
-		}
-		catch(Exception e)
-		{
-			Reloader reloader = Reloader.New(DB.storageManager.persistenceManager());
-			collect.forEach(reloader::reloadFlat);
-		}
-		
-		return HttpResponse.ok("Books successfully changed!");
-	}
-	
 	@Get
-	public List<Book> getBook()
+	public List<Book> getBooks()
 	{
-		return DB.root.getBooks();
+		return dao.books();
 	}
 	
 	@Get("/clear")
 	public HttpResponse<?> clearBooks()
 	{
-		DB.root.getBooks().clear();
-		DB.storageManager.store(DB.root.getBooks());
+		dao.clearBooks();
 		
 		return HttpResponse.ok("Books successfully cleared!");
 	}
 	
-	@Get("/updateNonStore")
-	public HttpResponse<?> updateBookNonStore()
+	@Get("/updateMulti")
+	public HttpResponse<?> rollbackImplExample()
 	{
-		Book book =
-			DB.root.getBooks().stream().filter(b -> b.getIsbn().equalsIgnoreCase("498123138-5")).findFirst().get();
-		String oldname = book.getName();
-		book.setName("Java, The Good Parts");
+		List<Book> filteredBooks =
+			dao.books().stream().filter(b -> b.getIsbn().startsWith("49")).collect(Collectors.toList());
 		
-		return HttpResponse.ok("Name of book successfully changed from " + oldname + " to " + book.getName());
+		dao.updateMultiBooks(filteredBooks);
+		
+		return HttpResponse.ok("Books successfully updated!");
 	}
 	
-	@Get("/updateNonStoreDeep")
+	@Get("/updateBookNonStore")
+	public HttpResponse<?> updateBookNonStore()
+	{
+		String result = dao.updateBookNonStore();
+		
+		return HttpResponse.ok(result);
+	}
+	
+	@Get("/updateAuthorNonStore")
 	public HttpResponse<?> updateAuthorNonStore()
 	{
-		Book book =
-			DB.root.getBooks().stream().filter(b -> b.getIsbn().equalsIgnoreCase("498123138-5")).findFirst().get();
-		String oldname = book.getAuthor().getLastname();
-		book.getAuthor().setLastname("John Travolta");
+		String result = dao.updateAuthorNonStore();
 		
-		return HttpResponse.ok(
-			"Name of author successfully changed from " + oldname + " to " + book.getAuthor().getLastname());
+		return HttpResponse.ok(result);
 	}
 	
 	@Get("/rollbackFlat")
 	public HttpResponse<?> rollbackBookFlat()
 	{
-		Book book =
-			DB.root.getBooks().stream().filter(b -> b.getIsbn().equalsIgnoreCase("498123138-5")).findFirst().get();
+		String result = dao.rollbackBookFlat();
 		
-		Reloader reloader = Reloader.New(DB.storageManager.persistenceManager());
-		
-		reloader.reloadFlat(book);
-		System.out.println(book.getName());
-		
-		return HttpResponse.ok("Book successfully rollbacked!");
+		return HttpResponse.ok(result);
 	}
 	
 	@Get("/rollbackDeep")
 	public HttpResponse<?> rollbackBookDeep()
 	{
-		Book book =
-			DB.root.getBooks().stream().filter(b -> b.getIsbn().equalsIgnoreCase("498123138-5")).findFirst().get();
-		System.out.println(book.getAuthor().getLastname());
+		String result = dao.rollbackBookDeep();
 		
-		Reloader reloader = Reloader.New(DB.storageManager.persistenceManager());
-		
-		try
-		{
-			reloader.reloadDeep(book);
-		}
-		catch(Exception e)
-		{
-			System.out.println(book.getAuthor().getLastname());
-		}
-		
-		return HttpResponse.ok("Author successfully rollbacked!");
-	}
-	
-	@Get("/rollbackImplExample")
-	public HttpResponse<?> rollbackImplExample()
-	{
-		Storer ls = DB.storageManager.createLazyStorer();
-		
-		List<Book> filteredBooks =
-			DB.root.getBooks().stream().filter(b -> b.getIsbn().startsWith("49")).collect(Collectors.toList());
-		
-		try
-		{
-			filteredBooks.forEach(b ->
-			{
-				b.setPrice(new BigDecimal(50.00));
-				ls.store(b);
-			});
-			
-			ls.commit();
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			
-			Reloader reloader = Reloader.New(DB.storageManager.persistenceManager());
-			
-			filteredBooks.forEach(b -> reloader.reloadFlat(b));
-			return HttpResponse.serverError("Update books failed - " + e.getMessage());
-		}
-		
-		return HttpResponse.ok("Books successfully updated!");
+		return HttpResponse.ok(result);
 	}
 }

@@ -72,7 +72,7 @@ public class DAOBook
 		Book book =
 			db.getRoot().getBooks().stream().filter(b -> b.getIsbn().equalsIgnoreCase("498123138-5")).findFirst().get();
 		String oldname = book.getAuthor().getLastname();
-		book.getAuthor().setLastname("John Travolta");
+		book.getAuthor().setLastname("Travolta");
 		
 		return "Name of author successfully changed from " + oldname + " to " + book.getAuthor().getLastname();
 	}
@@ -94,8 +94,7 @@ public class DAOBook
 	{
 		Book book =
 			db.getRoot().getBooks().stream().filter(b -> b.getIsbn().equalsIgnoreCase("498123138-5")).findFirst().get();
-		System.out.println(book.getAuthor().getLastname());
-		
+				
 		Reloader reloader = Reloader.New(db.getStorageManager().persistenceManager());
 		
 		reloader.reloadDeep(book);

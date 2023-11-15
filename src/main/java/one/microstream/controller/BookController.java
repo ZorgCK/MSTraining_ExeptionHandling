@@ -6,73 +6,49 @@ import java.util.stream.Collectors;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
+import jakarta.inject.Inject;
+import one.microstream.dao.DAOBook;
 import one.microstream.domain.Book;
-import one.microstream.storage.DB;
 import one.microstream.utils.MockupUtils;
 
 
 @Controller("/books")
 public class BookController
 {
+	@Inject private DAOBook dao;
+	
 	@Get("/create")
 	public HttpResponse<?> createBooks()
 	{
 		List<Book> allCreatedBooks = MockupUtils.loadMockupData();
 		
-		DB.root.getBooks().addAll(allCreatedBooks);
-		DB.store(DB.root.getBooks());
+		dao.addBooks(allCreatedBooks);
 		
 		return HttpResponse.ok("Books successfully created!");
 	}
-	
-	@Get("/changeMultiBooks")
-	public HttpResponse<?> changeMultiBooks()
-	{
-		List<Book> collect = DB.root.getBooks().stream().filter(b -> b.getName().startsWith("A")).collect(Collectors.toList());
 		
-		return HttpResponse.ok("Books successfully created!");
-	}
-	
 	@Get
-	public List<Book> getBook()
+	public List<Book> getBooks()
 	{
-		return DB.root.getBooks();
+		return dao.books();
 	}
 	
 	@Get("/clear")
 	public HttpResponse<?> clearBooks()
 	{
-		DB.root.getBooks().clear();
-		DB.store(DB.root.getBooks());
+		dao.clearBooks();
 		
 		return HttpResponse.ok("Books successfully cleared!");
 	}
 	
-	@Get("/updateNonStore")
-	public HttpResponse<?> updateBookNonStore()
+	@Get("/updateMulti")
+	public HttpResponse<?> rollbackImplExample()
 	{
+		List<Book> filteredBooks =
+			dao.books().stream().filter(b -> b.getIsbn().startsWith("49")).collect(Collectors.toList());
 		
-		return HttpResponse.ok();
-	}
-	
-	@Get("/updateNonStoreDeep")
-	public HttpResponse<?> updateAuthorNonStore()
-	{
-		
-		return HttpResponse.ok();
-	}
-	
-	@Get("/rollbackFlat")
-	public HttpResponse<?> rollbackBookFlat()
-	{
-		
-		return HttpResponse.ok("Book successfully rollbacked!");
-	}
-	
-	@Get("/rollbackDeep")
-	public HttpResponse<?> rollbackBookDeep()
-	{
-		
-		return HttpResponse.ok("Author successfully rollbacked!");
+		dao.updateMultiBooks(filteredBooks);
+			
+		return HttpResponse.ok("Books successfully updated!");
 	}
 }

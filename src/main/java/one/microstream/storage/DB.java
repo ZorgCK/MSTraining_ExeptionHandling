@@ -1,38 +1,49 @@
 package one.microstream.storage;
 
-import java.net.URL;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.micronaut.core.io.ResourceResolver;
-import io.micronaut.core.io.scan.ClassPathResourceLoader;
+import io.micronaut.context.ApplicationContext;
+import io.micronaut.context.annotation.Context;
+import jakarta.inject.Inject;
 import one.microstream.storage.embedded.configuration.types.EmbeddedStorageConfiguration;
 import one.microstream.storage.embedded.types.EmbeddedStorageManager;
 
 
+@Context
 public class DB
 {
-	private static final Logger				LOG		= LoggerFactory.getLogger(DB.class);
+	 @Inject ApplicationContext context;
 	
-	public static EmbeddedStorageManager	storageManager;
-	public final static DataRoot			root	= new DataRoot();
+	private final Logger					LOG		= LoggerFactory.getLogger(DB.class);
+	private final EmbeddedStorageManager	storageManager;
+	private final DataRoot					root	= new DataRoot();
 	
-	static
+	public DB()
 	{
-		ClassPathResourceLoader loader = new ResourceResolver().getLoader(ClassPathResourceLoader.class).get();
-		Optional<URL> resource = loader.getResource("microstream.xml");
+		super();
 		
-		storageManager = EmbeddedStorageConfiguration.load(
-			resource.get().getPath()).createEmbeddedStorageFoundation().createEmbeddedStorageManager(root).start();
+		System.out.println("init");
+		
+		storageManager = EmbeddedStorageConfiguration.Builder().setChannelCount(2).setStorageDirectory(
+			"data").createEmbeddedStorageFoundation().createEmbeddedStorageManager(root).start();
 	}
 	
-	public static synchronized void store(final Object object)
+	public EmbeddedStorageManager getStorageManager()
+	{
+		return storageManager;
+	}
+	
+	public DataRoot getRoot()
+	{
+		return root;
+	}
+	
+	public void store(final Object object)
 	{
 		try
 		{
-			DB.storageManager.store(object);
+			storageManager.store(object);
 		}
 		catch(final Throwable t)
 		{
@@ -40,11 +51,11 @@ public class DB
 		}
 	}
 	
-	public static synchronized void storeAll(final Object... objects)
+	public void storeAll(final Object... objects)
 	{
 		try
 		{
-			DB.storageManager.storeAll(objects);
+			storageManager.storeAll(objects);
 		}
 		catch(final Throwable t)
 		{
@@ -52,14 +63,26 @@ public class DB
 		}
 	}
 	
-	private static void onStorageFailure(final Throwable t)
+	public void storeAll(Iterable<?> iterable)
 	{
-		if(DB.storageManager != null && DB.storageManager.isRunning())
+		try
+		{
+			storageManager.storeAll(iterable);
+		}
+		catch(final Throwable t)
+		{
+			onStorageFailure(t);
+		}
+	}
+	
+	private void onStorageFailure(final Throwable t)
+	{
+		if(storageManager != null && storageManager.isRunning())
 		{
 			try
 			{
-				DB.LOG.error("Storage error! Shutting down storage...", t);
-				DB.storageManager.shutdown();
+				LOG.error("Storage error! Shutting down storage...", t);
+				context.stop();
 			}
 			catch(final Throwable tt)
 			{
@@ -68,5 +91,5 @@ public class DB
 		}
 		
 		root.clear();
-	}
+	}	
 }
